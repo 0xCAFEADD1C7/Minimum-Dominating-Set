@@ -2,7 +2,7 @@ package algorithms;
 
 import java.awt.Point;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Date;
 import java.util.BitSet;
 import java.util.List;
 import java.io.FileNotFoundException;
@@ -12,6 +12,7 @@ import java.io.BufferedReader;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.util.concurrent.ThreadLocalRandom;
 
 public class DefaultTeam {	
 	public boolean isNeighbour(Point p, Point q, int thr) {
@@ -44,10 +45,13 @@ public class DefaultTeam {
 		ArrayList<Point> sol = new ArrayList<>();
 		
 		ArrayList<Point> notSol = new ArrayList<>();
+		ArrayList<Integer> bests = new ArrayList<>(256);
 		
 		while(!rest.isEmpty()) {
 			int maxNeigh = 0;
 			int maxI = 0;
+
+			bests.clear();
 		
 			for (int i = 0; i < rest.size(); i++) {
 				Point p = rest.get(i);
@@ -57,11 +61,17 @@ public class DefaultTeam {
 						nbNeigh++;
 					}
 				}
+				// improving
 				if (maxNeigh < nbNeigh) {
 					maxNeigh = nbNeigh;
-					maxI = i;
+					bests.clear();
+					bests.add(i);
+				} else if (maxNeigh == nbNeigh) { // equalizing 
+					bests.add(i);
 				}
 			}
+
+			maxI = bests.get(ThreadLocalRandom.current().nextInt(bests.size()));
 
 			Point p = swapRemove(rest, maxI);
 			sol.add(p);
@@ -167,8 +177,23 @@ public class DefaultTeam {
 	}
 
 	public ArrayList<Point> calculDominatingSet(ArrayList<Point> points, int edgeThreshold) {
+		long begin = new Date().getTime();
+		long MAX_TIME = 30 * 60 * 1000; // max time to execute optimizations, in ms
+		ArrayList<Point> result;
+		ArrayList<Point> best = new ArrayList<>();
+		int bestSize = Integer.MAX_VALUE;
+
+		while (new Date().getTime() < begin + MAX_TIME) {
+			result = greedyWithLS(points, edgeThreshold);
+			// System.out.println(result.size());
+			// System.out.println(best.size());
+			if (result.size() < bestSize) {
+				best = result;
+				bestSize = result.size();
+			}
+		}
 		
-		return greedyWithLS(points, edgeThreshold);
+		return best;
 	}
 
 
@@ -203,7 +228,7 @@ public class DefaultTeam {
 	//FILE LOADER
 	private ArrayList<Point> readFromFile(String filename) {
 		String line;
-		String[] coordinates;
+	  String[] coordinates;
 		ArrayList<Point> points=new ArrayList<Point>();
 		try {
 			BufferedReader input = new BufferedReader(
