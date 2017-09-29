@@ -41,6 +41,8 @@ public class DefaultTeam {
 	}
 	
 	public ArrayList<Point> greedyWithLS(ArrayList<Point> points, int edgeThreshold) {
+		System.out.println("Running greedy");
+
 		ArrayList<Point> rest = (ArrayList<Point>) points.clone();
 		ArrayList<Point> sol = new ArrayList<>();
 		
@@ -87,7 +89,70 @@ public class DefaultTeam {
 			}
 		}
 
-		return localSearch(notSol, sol, edgeThreshold);
+		return localSearch32(notSol, localSearch(notSol, sol, edgeThreshold), edgeThreshold);
+	}
+
+	private ArrayList<Point> localSearch32(ArrayList<Point> rest, ArrayList<Point> sol, int thr) {
+		int thrS = 9*thr*thr;
+		for(int i = 0; i < sol.size(); i++) {
+			Point p = swapRemove(sol, i);
+			for(int j = i; j < sol.size(); j++) {
+				Point q = swapRemove(sol, j);
+				for(int k = j; k < sol.size(); k++) {
+					Point r = swapRemove(sol, k);
+
+					if (p.distanceSq(q) < thrS 
+						&& p.distanceSq(r) < thrS 
+						&& q.distanceSq(r) < thrS) {
+				
+						ArrayList<Point> toCheck = new ArrayList<>();
+						toCheck.add(p);
+						toCheck.add(q);
+						toCheck.add(r);
+						for (Point pk : rest) {
+							if (isNeighbour(pk, p, thr) || isNeighbour(pk, q, thr) || isNeighbour(pk, r, thr)) {
+								toCheck.add(pk);
+							}
+						}
+
+						for (int l = 0; l < rest.size(); l++) {
+							Point n1 = swapRemove(rest, l);
+							for (int m = l; m < rest.size(); m++) {
+								Point n2 = swapRemove(rest, m);
+
+								if (n1.distanceSq(p) < thrS && n1.distanceSq(q) < thrS && n1.distanceSq(r) < thrS && n2.distanceSq(p) < thrS	&& n2.distanceSq(q) < thrS && n2.distanceSq(r) < thrS){
+									rest.add(p);
+									rest.add(q);
+									rest.add(r);
+
+									sol.add(n1);
+									sol.add(n2);
+									
+									if (isBDSM(toCheck, sol, thr)) {
+										System.out.println("🌟 " + sol.size());
+										return localSearch32(rest, sol, thr);
+									} 
+									
+									sol.remove(sol.size()-1);
+									sol.remove(sol.size()-1);
+
+									rest.remove(rest.size() - 1);
+									rest.remove(rest.size() - 1);
+									rest.remove(rest.size() - 1);
+								}
+								swapBack(rest, m, n2);
+							}
+							swapBack(rest, l, n1);		
+						}
+					}
+					swapBack(sol, k, r);
+				}
+				swapBack(sol, j, q);
+			}
+			swapBack(sol, i, p);
+		}
+		
+		return sol;
 	}
 	
 	private static void check(boolean cond, String mes) {
@@ -110,33 +175,20 @@ public class DefaultTeam {
 						toCheck.add(pk);
 					}
 				}
-				
-				check(toCheck.stream().filter(e -> sol.contains(e)).toArray().length == 0, "check failed");
-				
+								
 				if (p.distanceSq(q) < thrS) {				
 					for (int k = 0; k < rest.size(); k++) {
 						Point n = swapRemove(rest, k);
-						
-//						check(rest.stream().filter(e -> sol.contains(e)).toArray().length == 0, "941");
-//						check(toCheck.stream().filter(e -> sol.contains(e)).toArray().length == 0, "942");
 						
 						if (n.distanceSq(p) < thrS && n.distanceSq(q) < thrS){
 							rest.add(p);
 							rest.add(q);
 							sol.add(n);
 							
-							// TODO 
-							boolean conflict = toCheck.remove(n);
-							boolean conflict2 = toCheck.remove(n);
-//							check(!toCheck.contains(n), "LAST C HD");
 							if (isBDSM(toCheck, sol, thr)) {
-								System.out.println("🦄 " + sol.size());
+								System.out.println("⭐ " + sol.size());
 								return localSearch(rest, sol, thr);
 							} 
-							
-							if (conflict) {
-								toCheck.add(n);
-							}
 							
 							sol.remove(sol.size()-1);
 							rest.remove(rest.size() - 1);
@@ -178,7 +230,7 @@ public class DefaultTeam {
 
 	public ArrayList<Point> calculDominatingSet(ArrayList<Point> points, int edgeThreshold) {
 		long begin = new Date().getTime();
-		long MAX_TIME = 30 * 60 * 1000; // max time to execute optimizations, in ms
+		long MAX_TIME = 1000; // max time to execute optimizations, in ms
 		ArrayList<Point> result;
 		ArrayList<Point> best = new ArrayList<>();
 		int bestSize = Integer.MAX_VALUE;
