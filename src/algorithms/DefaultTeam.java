@@ -13,6 +13,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.stream.*;
 
 public class DefaultTeam {	
 	public boolean isNeighbour(Point p, Point q, int thr) {
@@ -229,23 +230,25 @@ public class DefaultTeam {
 	}
 
 	public ArrayList<Point> calculDominatingSet(ArrayList<Point> points, int edgeThreshold) {
-		long begin = new Date().getTime();
-		long MAX_TIME = 1000; // max time to execute optimizations, in ms
-		ArrayList<Point> result;
-		ArrayList<Point> best = new ArrayList<>();
-		int bestSize = Integer.MAX_VALUE;
+		// long begin = new Date().getTime();
+		// // long MAX_TIME = 1000; // max time to execute optimizations, in ms
+		// ArrayList<Point> best = new ArrayList<>();
+		// int bestSize = Integer.MAX_VALUE;
 
-		while (new Date().getTime() < begin + MAX_TIME) {
-			result = greedyWithLS(points, edgeThreshold);
-			// System.out.println(result.size());
-			// System.out.println(best.size());
-			if (result.size() < bestSize) {
-				best = result;
-				bestSize = result.size();
-			}
-		}
-		
-		return best;
+		// while (new Date().getTime() < begin + MAX_TIME) {
+		// 	ArrayList<Point> result = greedyWithLS(points, edgeThreshold);
+		// 	// System.out.println(result.size());
+		// 	// System.out.println(best.size());
+		// 	if (result.size() < bestSize) {
+		// 		best = result;
+		// 		bestSize = result.size();
+		// 	}
+		// }
+
+		// 
+
+		Stream<ArrayList<Point>> parallel = IntStream.range(0, 4).parallel().mapToObj(a -> greedyWithLS(points, edgeThreshold));
+		return parallel.min((a, b) -> ((Integer)a.size()).compareTo(b.size())).get();
 	}
 
 
